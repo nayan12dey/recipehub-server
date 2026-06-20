@@ -38,7 +38,7 @@ async function run() {
 
         app.post("/api/recipes", async (req, res) => {
             const recipe = req.body;
-            const result = await recipeCollection.insertOne(recipe)
+            const result = await recipesCollection.insertOne(recipe)
             res.send(result)
         })
 
@@ -48,6 +48,7 @@ async function run() {
 
             res.send(recipes);
         });
+
 
 
         // recipe details
@@ -66,17 +67,51 @@ async function run() {
         app.patch("/recipes/like/:id", async (req, res) => {
 
             const result = await recipesCollection.updateOne(
-                    {
-                        _id: new ObjectId(req.params.id),
+                {
+                    _id: new ObjectId(req.params.id),
+                },
+                {
+                    $inc: {
+                        likesCount: 1,
                     },
-                    {
-                        $inc: {
-                            likesCount: 1,
-                        },
-                    }
-                );
+                }
+            );
 
             res.send(result);
+        });
+
+
+        // dashboard overview user info
+        app.get("/dashboard-stats/:email", async (req, res) => {
+            const email = req.params.email;
+
+            const totalRecipes = await recipesCollection.countDocuments({
+                authorEmail: email,
+            });
+
+            const totalFavorites = await favoritesCollection.countDocuments({
+                userEmail: email,
+            });
+
+            const userRecipes = await recipesCollection
+                .find({ authorEmail: email })
+                .toArray();
+
+            const totalLikes = userRecipes.reduce(
+                (sum, recipe) => sum + recipe.likesCount,
+                0
+            );
+
+            const user = await usersCollection.findOne({
+                email,
+            });
+
+            res.send({
+                totalRecipes,
+                totalFavorites,
+                totalLikes,
+                isPremium: user?.isPremium,
+            });
         });
 
 
