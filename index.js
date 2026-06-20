@@ -1,9 +1,14 @@
 const express = require('express');
+const cors = require("cors")
 const app = express()
 const port = 5000
 require('dotenv').config()
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+app.use(cors())
+app.use(express.json())
+
+
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 app.get('/', (req, res) => {
     res.send('Hello World!')
@@ -26,6 +31,40 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
+
+        const database = client.db('recipehub_db');
+        const recipesCollection = database.collection('recipes');
+
+
+        app.post("/api/recipes", async (req, res) => {
+            const recipe = req.body;
+            const result = await recipeCollection.insertOne(recipe)
+            res.send(result)
+        })
+
+        // to get recipe in browser recipe
+        app.get("/recipes", async (req, res) => {
+            const recipes = await recipesCollection.find().toArray();
+
+            res.send(recipes);
+        });
+
+
+        // recipe details
+        app.get("/recipes/:id", async (req, res) => {
+            const id = req.params.id;
+
+            const recipe = await recipesCollection.findOne({
+                _id: new ObjectId(id),
+            });
+
+            res.send(recipe);
+        });
+
+
+
+
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
