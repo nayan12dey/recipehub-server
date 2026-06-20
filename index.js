@@ -62,7 +62,25 @@ async function run() {
         });
 
 
-        
+        // like recipe
+        app.patch("/recipes/like/:id", async (req, res) => {
+
+            const result = await recipesCollection.updateOne(
+                    {
+                        _id: new ObjectId(req.params.id),
+                    },
+                    {
+                        $inc: {
+                            likesCount: 1,
+                        },
+                    }
+                );
+
+            res.send(result);
+        });
+
+
+
 
 
 
