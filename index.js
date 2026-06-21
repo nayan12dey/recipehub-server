@@ -34,6 +34,8 @@ async function run() {
 
         const database = client.db('recipehub_db');
         const recipesCollection = database.collection('recipes');
+        const favoritesCollection = database.collection('favorites');
+        const usersCollection = database.collection('users');
 
 
         app.post("/api/recipes", async (req, res) => {
@@ -136,6 +138,27 @@ async function run() {
                 })
                 .toArray();
 
+
+            res.send(result);
+        });
+
+        // edit recipe
+        app.put("/recipes/:id", async (req, res) => {
+
+            const updatedRecipe = req.body;
+
+            const result =
+                await recipesCollection.updateOne(
+                    {
+                        _id: new ObjectId(
+                            req.params.id
+                        ),
+                    },
+                    {
+                        $set:
+                            updatedRecipe,
+                    }
+                );
 
             res.send(result);
         });
