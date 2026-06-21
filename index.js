@@ -82,7 +82,7 @@ async function run() {
 
 
         // dashboard overview user info
-        app.get("/dashboard-stats/:email", async (req, res) => {
+        app.get("/dashboard/:email", async (req, res) => {
             const email = req.params.email;
 
             const totalRecipes = await recipesCollection.countDocuments({
@@ -114,6 +114,16 @@ async function run() {
             });
         });
 
+        
+        // add-recipe
+        app.post("/recipes", async (req, res) => {
+            const recipe = req.body;
+
+            const result =
+                await recipesCollection.insertOne(recipe);
+
+            res.send(result);
+        });
 
 
 
