@@ -114,7 +114,7 @@ async function run() {
             });
         });
 
-        
+
         // add-recipe
         app.post("/recipes", async (req, res) => {
             const recipe = req.body;
@@ -125,7 +125,20 @@ async function run() {
             res.send(result);
         });
 
+        // my recipes
+        app.get("/my-recipes/:email", async (req, res) => {
+            const email = req.params.email;
 
+
+            const result = await recipesCollection
+                .find({
+                    authorEmail: email,
+                })
+                .toArray();
+
+
+            res.send(result);
+        });
 
 
 
