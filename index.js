@@ -35,7 +35,7 @@ async function run() {
         const database = client.db('recipehub_db');
         const recipesCollection = database.collection('recipes');
         const favoritesCollection = database.collection('favorites');
-        const usersCollection = database.collection('users');
+        const usersCollection = database.collection('user');
 
 
         app.post("/api/recipes", async (req, res) => {
@@ -172,6 +172,29 @@ async function run() {
                         req.params.id
                     ),
                 });
+
+            res.send(result);
+        });
+
+
+        // update profile name and image
+        app.patch("/users/:email", async (req, res) => {
+            const email = req.params.email;
+
+            const { name, image } = req.body;
+
+            const result = await usersCollection.updateOne(
+                {
+                    email: email,
+                },
+                {
+                    $set: {
+                        name,
+                        image,
+                        updatedAt: new Date(),
+                    },
+                }
+            );
 
             res.send(result);
         });
