@@ -163,6 +163,19 @@ async function run() {
             res.send(result);
         });
 
+        // delete recipe
+        app.delete("/recipes/:id", async (req, res) => {
+
+            const result =
+                await recipesCollection.deleteOne({
+                    _id: new ObjectId(
+                        req.params.id
+                    ),
+                });
+
+            res.send(result);
+        });
+
 
 
         // Send a ping to confirm a successful connection
@@ -182,3 +195,5 @@ run().catch(console.dir);
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
+
+
