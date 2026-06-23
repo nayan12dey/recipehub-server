@@ -36,6 +36,7 @@ async function run() {
         const recipesCollection = database.collection('recipes');
         const favoritesCollection = database.collection('favorites');
         const usersCollection = database.collection('user');
+        const paymentsCollection = database.collection('payment')
 
 
         app.post("/api/recipes", async (req, res) => {
@@ -195,6 +196,33 @@ async function run() {
                     },
                 }
             );
+
+            res.send(result);
+        });
+
+
+        // receipe payment 
+        app.post("/payments", async (req, res) => {
+
+            const payment = req.body;
+            console.log(payment)
+
+            const existingPayment = await paymentsCollection.findOne({
+                    stripeSessionId:
+                        payment.stripeSessionId,
+                });
+
+            if (existingPayment) {
+                return res.send({
+                    message:
+                        "Payment already exists",
+                });
+            }
+
+            const result =
+                await paymentsCollection.insertOne(
+                    payment
+                );
 
             res.send(result);
         });
