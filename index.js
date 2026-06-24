@@ -3,6 +3,10 @@ const cors = require("cors")
 const app = express()
 const port = 5000
 require('dotenv').config()
+const Stripe = require("stripe");
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 
 app.use(cors())
 app.use(express.json())
@@ -314,6 +318,43 @@ async function run() {
             res.send(result);
         });
 
+
+        // 
+        app.get("/stripe-session/:id", async (req, res) => {
+            try {
+                const session = await stripe.checkout.sessions.retrieve(
+                    req.params.id
+                );
+                res.send({
+                    amount: session.amount_total / 100,
+                    paymentStatus: session.payment_status,
+                    sessionId: session.id,
+                });
+            } catch (error) {
+                res.status(500).send({
+                    message: error.message,
+                });
+            }
+        });
+
+        // transaction route
+        app.get("/payments", async (req, res) => {
+            const result =
+                await paymentsCollection
+                    .find()
+                    .sort({
+                        purchasedAt: -1,
+                    })
+                    .toArray();
+
+
+            res.send(result);
+        });
+
+
+
+
+
         // fetch user by email
         app.get("/user/:email", async (req, res) => {
             const email = req.params.email;
@@ -378,15 +419,15 @@ async function run() {
         app.patch("/users/unblock/:id", async (req, res) => {
 
             const result = await usersCollection.updateOne(
-                    {
-                        _id: new ObjectId(req.params.id),
+                {
+                    _id: new ObjectId(req.params.id),
+                },
+                {
+                    $set: {
+                        status: "active",
                     },
-                    {
-                        $set: {
-                            status: "active",
-                        },
-                    }
-                );
+                }
+            );
 
             res.send(result);
         });
