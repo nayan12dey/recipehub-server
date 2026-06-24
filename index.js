@@ -240,7 +240,61 @@ async function run() {
             res.send(result);
         });
 
-        
+
+        // favorites recipe
+        app.post("/favorites", async (req, res) => {
+
+            const favorite = req.body;
+
+            const existing = await favoritesCollection.findOne({
+                userEmail: favorite.userEmail,
+                recipeId: favorite.recipeId,
+            });
+
+            if (existing) {
+                return res.send({
+                    message: "Already Added",
+                });
+            }
+
+            const result =
+                await favoritesCollection.insertOne(
+                    favorite
+                );
+
+            res.send(result);
+        });
+
+
+        // fetch feavorites recipe
+        app.get("/favorites/:email", async (req, res) => {
+
+            const email = req.params.email;
+
+            const result =
+                await favoritesCollection
+                    .find({
+                        userEmail: email,
+                    })
+                    .toArray();
+
+            res.send(result);
+        });
+
+        // remove favorite recipe
+        app.delete("/favorites/:id", async (req, res) => {
+
+            const result =
+                await favoritesCollection.deleteOne({
+                    _id: new ObjectId(
+                        req.params.id
+                    ),
+                });
+
+            res.send(result);
+        });
+
+
 
 
 
