@@ -266,7 +266,7 @@ async function run() {
         });
 
 
-        // fetch feavorites recipe
+        // fetch favorites recipe
         app.get("/favorites/:email", async (req, res) => {
 
             const email = req.params.email;
@@ -292,6 +292,37 @@ async function run() {
                 });
 
             res.send(result);
+        });
+
+
+        // premium user feature
+        app.patch("/users/plan/:email", async (req, res) => {
+            const email = req.params.email;
+
+            const result =
+                await usersCollection.updateOne(
+                    {
+                        email,
+                    },
+                    {
+                        $set: {
+                            plan: "premium",
+                        },
+                    }
+                );
+
+            res.send(result);
+        });
+
+        //
+        app.get("/user/:email", async (req, res) => {
+            const email = req.params.email;
+
+            const user = await usersCollection.findOne({
+                email: email,
+            });
+
+            res.send(user);
         });
 
 
