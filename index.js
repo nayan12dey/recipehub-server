@@ -36,7 +36,7 @@ async function run() {
         const recipesCollection = database.collection('recipes');
         const favoritesCollection = database.collection('favorites');
         const usersCollection = database.collection('user');
-        const paymentsCollection = database.collection('payment')
+        const paymentsCollection = database.collection('payments')
 
 
         app.post("/api/recipes", async (req, res) => {
@@ -208,9 +208,9 @@ async function run() {
             console.log(payment)
 
             const existingPayment = await paymentsCollection.findOne({
-                    stripeSessionId:
-                        payment.stripeSessionId,
-                });
+                stripeSessionId:
+                    payment.stripeSessionId,
+            });
 
             if (existingPayment) {
                 return res.send({
@@ -226,6 +226,21 @@ async function run() {
 
             res.send(result);
         });
+
+        // purchased recipe
+        app.get("/purchases/:email", async (req, res) => {
+
+            const email = req.params.email;
+
+            const result =
+                await paymentsCollection.find({
+                    userEmail: email,
+                }).toArray();
+
+            res.send(result);
+        });
+
+        
 
 
 
