@@ -179,7 +179,7 @@ async function run() {
 
 
         // update profile name and image
-        app.patch("/users/:email", async (req, res) => {
+        app.patch("/user/:email", async (req, res) => {
             const email = req.params.email;
 
             const { name, image } = req.body;
@@ -314,7 +314,7 @@ async function run() {
             res.send(result);
         });
 
-        //
+        // fetch user by email
         app.get("/user/:email", async (req, res) => {
             const email = req.params.email;
 
@@ -323,6 +323,31 @@ async function run() {
             });
 
             res.send(user);
+        });
+
+
+        // admin dashboard overview
+        app.get("/admin-overview", async (req, res) => {
+
+            const totalUsers =
+                await usersCollection.countDocuments();
+
+            const totalRecipes =
+                await recipesCollection.countDocuments();
+
+            const totalPremiumMembers =
+                await usersCollection.countDocuments({
+                    plan: "premium",
+                });
+
+            const totalReports = 0;
+
+            res.send({
+                totalUsers,
+                totalRecipes,
+                totalPremiumMembers,
+                totalReports,
+            });
         });
 
 
