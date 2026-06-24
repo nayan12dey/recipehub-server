@@ -351,6 +351,47 @@ async function run() {
         });
 
 
+        // get all users
+        app.get("/users", async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        });
+
+        // block user
+        app.patch("/users/block/:id", async (req, res) => {
+
+            const result = await usersCollection.updateOne(
+                {
+                    _id: new ObjectId(req.params.id),
+                },
+                {
+                    $set: {
+                        status: "blocked",
+                    },
+                }
+            );
+
+            res.send(result);
+        });
+
+        // unblock user
+        app.patch("/users/unblock/:id", async (req, res) => {
+
+            const result = await usersCollection.updateOne(
+                    {
+                        _id: new ObjectId(req.params.id),
+                    },
+                    {
+                        $set: {
+                            status: "active",
+                        },
+                    }
+                );
+
+            res.send(result);
+        });
+
+
 
 
 
