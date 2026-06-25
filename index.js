@@ -41,6 +41,7 @@ async function run() {
         const favoritesCollection = database.collection('favorites');
         const usersCollection = database.collection('user');
         const paymentsCollection = database.collection('payments')
+        const reportsCollection = database.collection("reports");
 
 
         app.post("/api/recipes", async (req, res) => {
@@ -83,6 +84,78 @@ async function run() {
                     },
                 }
             );
+
+            res.send(result);
+        });
+
+
+        // reports recipe
+        app.post("/reports", async (req, res) => {
+
+            const report = req.body;
+
+            const existingReport =
+                await reportsCollection.findOne({
+                    recipeId: report.recipeId,
+                    reportedBy: report.reportedBy,
+                });
+
+            if (existingReport) {
+                return res.send({
+                    message: "Already Reported",
+                });
+            }
+
+            const result =
+                await reportsCollection.insertOne(report);
+
+            res.send(result);
+        });
+
+
+        // get all reports
+        app.get("/reports", async (req, res) => {
+            const result = await reportsCollection
+                .find()
+                .sort({ createdAt: -1 })
+                .toArray();
+
+            res.send(result);
+        });
+
+
+        // dismiss report
+        app.patch("/reports/dismiss/:id", async (req, res) => {
+
+            const result =
+                await reportsCollection.updateOne(
+                    {
+                        _id: new ObjectId(req.params.id),
+                    },
+                    {
+                        $set: {
+                            status: "dismissed",
+                        },
+                    }
+                );
+
+            res.send(result);
+        });
+
+        // resolve report
+        app.patch("/reports/resolve/:id", async (req, res) => {
+
+            const result =
+                await reportsCollection.updateOne(
+                    {
+                        _id: new ObjectId(req.params.id),
+                    },
+                    {
+                        $set: {
+                            status: "resolved",
+                        },
+                    }
+                );
 
             res.send(result);
         });
@@ -180,6 +253,8 @@ async function run() {
 
             res.send(result);
         });
+
+
 
 
         // update profile name and image
@@ -378,7 +453,7 @@ async function run() {
                     plan: "premium",
                 });
 
-            const totalReports = 0;
+            const totalReports = await reportsCollection.countDocuments();;
 
             res.send({
                 totalUsers,
@@ -460,7 +535,7 @@ async function run() {
             res.send(result);
         });
 
-        
+
         // popular recipes by liked most
         app.get("/popular-recipes", async (req, res) => {
 
