@@ -460,6 +460,20 @@ async function run() {
             res.send(result);
         });
 
+        
+        // popular recipes by liked most
+        app.get("/popular-recipes", async (req, res) => {
+
+            const result = await recipesCollection
+                .find()
+                .sort({
+                    likesCount: -1,
+                })
+                .limit(6)
+                .toArray();
+
+            res.send(result);
+        });
 
 
 
