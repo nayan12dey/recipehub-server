@@ -429,7 +429,7 @@ async function run() {
             res.send(result);
         });
 
-        
+
         // feature recipe
         app.patch("/recipes/feature/:id", async (req, res) => {
             const result = await recipesCollection.updateOne(
@@ -446,6 +446,19 @@ async function run() {
             res.send(result);
         });
 
+
+        // get feature recipe
+        app.get("/featured-recipes", async (req, res) => {
+
+            const result = await recipesCollection
+                .find({
+                    isFeatured: true,
+                })
+                .limit(6)
+                .toArray();
+
+            res.send(result);
+        });
 
 
 
