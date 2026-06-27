@@ -13,11 +13,11 @@ app.use(express.json())
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
-
 
 
 const uri = process.env.MONGODB_URI;
@@ -30,6 +30,59 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+
+const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`))
+
+
+// middleware
+const verifyToken = async (req, res, next) => {
+    const authHeader = req.headers.authorization
+    console.log(authHeader)
+
+
+    if (!authHeader || !authHeader.startsWith("Bearer")) {
+        return res.status(401).json({ msg: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    console.log(token)
+
+    if (!token) {
+        return res.status(401).json({ msg: "Unauthorized" });
+    }
+
+    try {
+        const { payload } = await jwtVerify(token, JWKS);
+        req.user = payload;
+
+        next();
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(401).json({ msg: "Unauthorized" });
+    }
+
+}
+
+
+const verifyAdmin = async (req, res, next) => {
+    const email = req.user.email;
+
+    const user = await usersCollection.findOne({ email });
+
+    if (user?.role !== "admin") {
+        return res.status(403).send({
+            message: "Forbidden Access",
+        });
+    }
+
+    next();
+};
+
+
+
+
 
 async function run() {
     try {
@@ -52,9 +105,34 @@ async function run() {
 
         // to get recipe in browser recipe
         app.get("/recipes", async (req, res) => {
-            const recipes = await recipesCollection.find().toArray();
+            const category = req.query.category;
 
-            res.send(recipes);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 6;
+
+            const skip = (page - 1) * limit;
+
+            let query = {};
+
+            if (category) {
+                query.category = category;
+            }
+
+            const totalRecipes =
+                await recipesCollection.countDocuments(query);
+
+            const recipes = await recipesCollection
+                .find(query)
+                .skip(skip)
+                .limit(limit)
+                .toArray();
+
+            res.send({
+                recipes,
+                totalRecipes,
+                totalPages: Math.ceil(totalRecipes / limit),
+                currentPage: page,
+            });
         });
 
 
@@ -90,7 +168,7 @@ async function run() {
 
 
         // reports recipe
-        app.post("/reports", async (req, res) => {
+        app.post("/reports", verifyToken, async (req, res) => {
 
             const report = req.body;
 
@@ -114,7 +192,7 @@ async function run() {
 
 
         // get all reports
-        app.get("/reports", async (req, res) => {
+        app.get("/reports", verifyToken, async (req, res) => {
             const result = await reportsCollection
                 .find()
                 .sort({ createdAt: -1 })
@@ -125,7 +203,7 @@ async function run() {
 
 
         // dismiss report
-        app.patch("/reports/dismiss/:id", async (req, res) => {
+        app.patch("/reports/dismiss/:id", verifyToken, async (req, res) => {
 
             const result =
                 await reportsCollection.updateOne(
@@ -143,7 +221,7 @@ async function run() {
         });
 
         // resolve report
-        app.patch("/reports/resolve/:id", async (req, res) => {
+        app.patch("/reports/resolve/:id", verifyToken, async (req, res) => {
 
             const result =
                 await reportsCollection.updateOne(
@@ -162,7 +240,7 @@ async function run() {
 
 
         // dashboard overview user info
-        app.get("/dashboard/:email", async (req, res) => {
+        app.get("/dashboard/:email", verifyToken, async (req, res) => {
             const email = req.params.email;
 
             const totalRecipes = await recipesCollection.countDocuments({
@@ -196,7 +274,7 @@ async function run() {
 
 
         // add-recipe
-        app.post("/recipes", async (req, res) => {
+        app.post("/recipes", verifyToken, async (req, res) => {
             const recipe = req.body;
 
             const result =
@@ -206,7 +284,7 @@ async function run() {
         });
 
         // my recipes
-        app.get("/my-recipes/:email", async (req, res) => {
+        app.get("/my-recipes/:email", verifyToken, async (req, res) => {
             const email = req.params.email;
 
 
@@ -258,10 +336,12 @@ async function run() {
 
 
         // update profile name and image
-        app.patch("/user/:email", async (req, res) => {
+        app.patch("/user/:email", verifyToken, async (req, res) => {
             const email = req.params.email;
 
+
             const { name, image } = req.body;
+            console.log(name, image)
 
             const result = await usersCollection.updateOne(
                 {
@@ -281,7 +361,7 @@ async function run() {
 
 
         // receipe payment 
-        app.post("/payments", async (req, res) => {
+        app.post("/payments", verifyToken, async (req, res) => {
 
             const payment = req.body;
             console.log(payment)
@@ -307,7 +387,7 @@ async function run() {
         });
 
         // purchased recipe
-        app.get("/purchases/:email", async (req, res) => {
+        app.get("/purchases/:email", verifyToken, async (req, res) => {
 
             const email = req.params.email;
 
@@ -346,7 +426,7 @@ async function run() {
 
 
         // fetch favorites recipe
-        app.get("/favorites/:email", async (req, res) => {
+        app.get("/favorites/:email", verifyToken, async (req, res) => {
 
             const email = req.params.email;
 
@@ -394,8 +474,8 @@ async function run() {
         });
 
 
-        // 
-        app.get("/stripe-session/:id", async (req, res) => {
+        // store payment using stripe
+        app.get("/stripe-session/:id", verifyToken, async (req, res) => {
             try {
                 const session = await stripe.checkout.sessions.retrieve(
                     req.params.id
@@ -413,7 +493,7 @@ async function run() {
         });
 
         // transaction route
-        app.get("/payments", async (req, res) => {
+        app.get("/payments", verifyToken, async (req, res) => {
             const result =
                 await paymentsCollection
                     .find()
@@ -428,7 +508,7 @@ async function run() {
 
 
         // fetch user by email
-        app.get("/user/:email", async (req, res) => {
+        app.get("/user/:email", verifyToken, async (req, res) => {
             const email = req.params.email;
 
             const user = await usersCollection.findOne({
@@ -440,7 +520,7 @@ async function run() {
 
 
         // admin dashboard overview
-        app.get("/admin-overview", async (req, res) => {
+        app.get("/admin-overview", verifyToken, async (req, res) => {
 
             const totalUsers =
                 await usersCollection.countDocuments();
@@ -465,13 +545,13 @@ async function run() {
 
 
         // get all users
-        app.get("/users", async (req, res) => {
+        app.get("/users", verifyToken, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
 
         // block user
-        app.patch("/users/block/:id", async (req, res) => {
+        app.patch("/users/block/:id", verifyToken, async (req, res) => {
 
             const result = await usersCollection.updateOne(
                 {
@@ -488,7 +568,7 @@ async function run() {
         });
 
         // unblock user
-        app.patch("/users/unblock/:id", async (req, res) => {
+        app.patch("/users/unblock/:id", verifyToken, async (req, res) => {
 
             const result = await usersCollection.updateOne(
                 {
@@ -569,5 +649,3 @@ run().catch(console.dir);
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
-
-
