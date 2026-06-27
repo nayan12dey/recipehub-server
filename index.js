@@ -361,7 +361,7 @@ async function run() {
 
 
         // receipe payment 
-        app.post("/payments", verifyToken, async (req, res) => {
+        app.post("/payments", async (req, res) => {
 
             const payment = req.body;
             console.log(payment)
@@ -394,6 +394,7 @@ async function run() {
             const result =
                 await paymentsCollection.find({
                     userEmail: email,
+                    paymentType: "recipe",
                 }).toArray();
 
             res.send(result);
@@ -475,7 +476,7 @@ async function run() {
 
 
         // store payment using stripe
-        app.get("/stripe-session/:id", verifyToken, async (req, res) => {
+        app.get("/stripe-session/:id", async (req, res) => {
             try {
                 const session = await stripe.checkout.sessions.retrieve(
                     req.params.id
@@ -493,7 +494,7 @@ async function run() {
         });
 
         // transaction route
-        app.get("/payments", verifyToken, async (req, res) => {
+        app.get("/payments", async (req, res) => {
             const result =
                 await paymentsCollection
                     .find()
