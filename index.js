@@ -586,6 +586,15 @@ async function run() {
         });
 
 
+        // get all recipes for admin
+        app.get("/all-recipes", async (req, res) => {
+            const result = await recipesCollection.find().toArray();
+
+            res.send(result);
+        });
+
+
+
         // feature recipe
         app.patch("/recipes/feature/:id", async (req, res) => {
             const result = await recipesCollection.updateOne(
@@ -595,6 +604,7 @@ async function run() {
                 {
                     $set: {
                         isFeatured: true,
+                        featuredAt: new Date(),
                     },
                 }
             );
@@ -609,6 +619,9 @@ async function run() {
             const result = await recipesCollection
                 .find({
                     isFeatured: true,
+                })
+                .sort({
+                    featuredAt: -1,
                 })
                 .limit(6)
                 .toArray();
