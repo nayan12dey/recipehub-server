@@ -617,9 +617,8 @@ async function run() {
 
 
         // get all recipes for admin
-        app.get("/all-recipes", async (req, res) => {
+        app.get("/all-recipes",verifyToken, async (req, res) => {
             const result = await recipesCollection.find().toArray();
-
             res.send(result);
         });
 
