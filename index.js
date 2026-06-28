@@ -394,8 +394,10 @@ async function run() {
             console.log(payment)
 
             const existingPayment = await paymentsCollection.findOne({
-                stripeSessionId:
-                    payment.stripeSessionId,
+                stripeSessionId: payment.stripeSessionId,
+                userEmail: payment.userEmail,
+                recipeId: payment.recipeId,
+                paymentType: "recipe",
             });
 
             if (existingPayment) {
@@ -413,6 +415,7 @@ async function run() {
             res.send(result);
         });
 
+
         // purchased recipe
         app.get("/purchases/:email", verifyToken, async (req, res) => {
 
@@ -429,7 +432,7 @@ async function run() {
 
 
         // favorites recipe
-        app.post("/favorites", async (req, res) => {
+        app.post("/favorites",verifyToken, async (req, res) => {
 
             const favorite = req.body;
 
