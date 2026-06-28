@@ -95,6 +95,7 @@ async function run() {
         const usersCollection = database.collection('user');
         const paymentsCollection = database.collection('payments')
         const reportsCollection = database.collection("reports");
+        const likesCollection = database.collection("likes");
 
 
         app.post("/api/recipes", async (req, res) => {
@@ -150,21 +151,47 @@ async function run() {
 
 
         // like recipe
-        app.patch("/recipes/like/:id", async (req, res) => {
+        app.patch(
+            "/recipes/like/:id",
+            verifyToken,
+            async (req, res) => {
 
-            const result = await recipesCollection.updateOne(
-                {
-                    _id: new ObjectId(req.params.id),
-                },
-                {
-                    $inc: {
-                        likesCount: 1,
-                    },
+                const recipeId = req.params.id;
+                const email = req.user.email;
+
+                const alreadyLiked =
+                    await likesCollection.findOne({
+                        recipeId,
+                        email,
+                    });
+
+                if (alreadyLiked) {
+                    return res.status(400).send({
+                        message: "Already Liked",
+                    });
                 }
-            );
 
-            res.send(result);
-        });
+                await likesCollection.insertOne({
+                    recipeId,
+                    email,
+                    createdAt: new Date(),
+                });
+
+                const result =
+                    await recipesCollection.updateOne(
+                        {
+                            _id: new ObjectId(recipeId),
+                        },
+                        {
+                            $inc: {
+                                likesCount: 1,
+                            },
+                        }
+                    );
+
+                res.send(result);
+            }
+        );
 
 
         // reports recipe
