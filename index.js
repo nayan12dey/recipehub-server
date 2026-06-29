@@ -304,6 +304,30 @@ async function run() {
         app.post("/recipes", verifyToken, async (req, res) => {
             const recipe = req.body;
 
+            const email = req.user.email;
+
+           
+            const user = await usersCollection.findOne({
+                email,
+            });
+
+          
+            const totalRecipes =
+                await recipesCollection.countDocuments({
+                    authorEmail: email,
+                });
+
+           
+            if (
+                user?.plan !== "premium" &&
+                totalRecipes >= 2
+            ) {
+                return res.status(403).send({
+                    message:
+                        "Free users can add only 2 recipes. Upgrade to Premium.",
+                });
+            }
+
             const result =
                 await recipesCollection.insertOne(recipe);
 
@@ -432,7 +456,7 @@ async function run() {
 
 
         // favorites recipe
-        app.post("/favorites",verifyToken, async (req, res) => {
+        app.post("/favorites", verifyToken, async (req, res) => {
 
             const favorite = req.body;
 
@@ -617,7 +641,7 @@ async function run() {
 
 
         // get all recipes for admin
-        app.get("/all-recipes",verifyToken, async (req, res) => {
+        app.get("/all-recipes", verifyToken, async (req, res) => {
             const result = await recipesCollection.find().toArray();
             res.send(result);
         });
